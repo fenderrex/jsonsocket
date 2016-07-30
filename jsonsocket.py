@@ -1,54 +1,26 @@
-import json, socket
+import json
 
-class Server(object):
-  """
-  A JSON socket server used to communicate with a JSON socket client. All the
-  data is serialized in JSON. How to use it:
+## Usage $ twistd -y webserver.py
+from pprint import pprint
+from twisted.application.internet import TCPServer
+from twisted.application.service import Application
+from twisted.web.resource import Resource
+from twisted.web.server import Site
 
-  server = Server(host, port)
-  while True:
-    server.accept()
-    data = server.recv()
-    # shortcut: data = server.accept().recv()
-    server.send({'status': 'ok'})
-  """
 
-  backlog = 5
-  client = None
+class Server(Resource):
+    def render_GET(self, request):
+        return ''
 
-  def __init__(self, host, port):
-    self.socket = socket.socket()
-    self.socket.bind((host, port))
-    self.socket.listen(self.backlog)
-
-  def __del__(self):
-    self.close()
-
-  def accept(self):
-    # if a client is already connected, disconnect it
-    if self.client:
-      self.client.close()
-    self.client, self.client_addr = self.socket.accept()
-    return self
-
-  def send(self, data):
-    if not self.client:
-      raise Exception('Cannot send data, no client is connected')
-    _send(self.client, data)
-    return self
-
-  def recv(self):
-    if not self.client:
-      raise Exception('Cannot receive data, no client is connected')
-    return _recv(self.client)
-
-  def close(self):
-    if self.client:
-      self.client.close()
-      self.client = None
-    if self.socket:
-      self.socket.close()
-      self.socket = None
+    def render_POST(self, request):
+        pprint(request.__dict__)
+        newdata = request.content.getvalue()
+        print newdata
+        return ''
+root = Resource()
+root.putChild("server", Server())
+application = Application("My Web Service")
+TCPServer(8880, Site(root)).setServiceParent(application)
 
 
 class Client(object):
